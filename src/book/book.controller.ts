@@ -1,7 +1,8 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post } from '@nestjs/common';
 import { BookService } from './book.service';
 import { CreateBookDto } from './dto/create-book.dto';
 import { Book } from './models/book.model';
+import { UpdateBookDto } from './dto/update-book.dto';
 
 @Controller('book')
 export class BookController {
@@ -42,5 +43,31 @@ export class BookController {
         message: 'Произошла ошибка при создании книги.',
       };
     }
+  }
+
+  @Post('/updateBook/:bookId')
+  async updateBook(
+    @Param('bookId') bookId: string,
+    @Body() updateBookDto: UpdateBookDto,
+  ) {
+    const updateBook = await this.bookService.updateBook(bookId, updateBookDto);
+
+    return updateBook;
+  }
+
+  @Delete('/deleteBook/:bookId')
+  async deleteBook(@Param('bookId') bookId: string) {
+    const book = await this.bookService.deleteBook(bookId);
+    return 'Successfully deleted';
+  }
+
+  @Post('/addAuthor/:bookId')
+  async addAuthor(
+    @Param('bookId') bookId: string,
+    @Body('authorIds') authorIds: string[],
+  ) {
+    const book = await this.bookService.addAuthorToBook(bookId, authorIds);
+
+    return book;
   }
 }

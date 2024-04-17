@@ -1,5 +1,6 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post } from '@nestjs/common';
 import { AuthorService } from './author.service';
+import { UpdateAuthorDto } from './dto/author-update.dto';
 
 @Controller('author')
 export class AuthorController {
@@ -14,5 +15,24 @@ export class AuthorController {
   @Get('/findAllAuthors')
   async findAll() {
     return this.authorService.findAll();
+  }
+
+  @Post('/updateAuthor/:authorId')
+  async updateAuthor(
+    @Param('authorId') authorId: string,
+    @Body() updateAuthorDto: UpdateAuthorDto,
+  ) {
+    const updateAuthor = await this.authorService.updateAuthor(
+      authorId,
+      updateAuthorDto,
+    );
+
+    return updateAuthor;
+  }
+
+  @Delete('/deleteAuthor/:authorId')
+  async deleteAuthor(@Param('authorId') authorId: string) {
+    const author = await this.authorService.deleteAuthor(authorId);
+    return 'Successfully deleted';
   }
 }

@@ -1,10 +1,11 @@
-import { Body, Injectable } from '@nestjs/common';
+import { Body, Injectable, Param } from '@nestjs/common';
 import { Book } from './models/book.model';
 import { InjectModel } from '@nestjs/sequelize';
 import { Author } from 'src/author/models/author.model';
 import { CreateBookDto } from './dto/create-book.dto';
 import { AuthorBook } from 'src/author/models/author-book.model';
 import { Op } from 'sequelize';
+import { UpdateBookDto } from './dto/update-book.dto';
 
 @Injectable()
 export class BookService {
@@ -82,5 +83,57 @@ export class BookService {
         },
       ],
     });
+  }
+
+  async updateBook(
+    @Param('bookId') bookId: string,
+    @Body() updateBookDto: UpdateBookDto,
+  ) {
+    const book = await this.bookModel.findByPk(bookId);
+    if (!book) {
+      throw new Error(`Book with id ${bookId} not found`);
+    }
+    const updateBook = await book.update(updateBookDto);
+    return updateBook;
+  }
+
+  async deleteBook(@Param('bookId') bookId: string) {
+    const book = await this.bookModel.findByPk(bookId);
+
+    await book.destroy({ force: true });
+
+    return 'Successfully deleted';
+  }
+
+  async addAuthorToBook(
+    @Param('bookId') bookId: string,
+    @Body() authorIds: string[],
+  ): Promise<Book> {
+    const book = await this.bookModel.findByPk(bookId);
+    if (!book) {
+      throw new Error(`Book with id ${bookId} not found`);
+    }
+
+    // Проверяем, есть ли уже связи между книгой и авторами
+    const existingAuthorIds = (
+      await book.$get('authors', { attributes: ['id'] })
+    ).map((author) => author.id);
+
+    // Избегаем дублирования связей
+    const uniqueAuthorIds = authorIds.filter(
+      (authorId) => !existingAuthorIds.includes(authorId),
+    );
+
+    // Создаем новые записи в промежуточной таблице AuthorBook для связи книги с новыми авторами
+    await Promise.all(
+      uniqueAuthorIds.map(async (authorId) => {
+        await this.authorBookModel.create({
+          bookId: book.id,
+          authorId,
+        });
+      }),
+    );
+
+    return book;
   }
 }
